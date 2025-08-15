@@ -1,0 +1,39 @@
+using UnityEngine;
+
+public class MonoToStereo : MonoBehaviour
+{
+    public AudioClip monoClip; // 输入的单声道音频
+    private AudioClip stereoClip; // 输出的双声道音频
+
+    void Start()
+    {
+        // 获取单声道音频原始数据
+        float[] monoData = new float[monoClip.samples];
+        monoClip.GetData(monoData, 0);
+
+        // 创建双声道数据数组（长度为原数据的两倍）
+        float[] stereoData = new float[monoData.Length * 2];
+
+        // 复制单声道数据到左右声道
+        for (int i = 0; i < monoData.Length; i++)
+        {
+            stereoData[i * 2] = monoData[i];     // 左声道
+            stereoData[i * 2 + 1] = monoData[i]; // 右声道
+        }
+
+        // 创建双声道 AudioClip
+        stereoClip = AudioClip.Create(
+            "StereoClip",
+            monoClip.samples,
+            2, // 双声道
+            monoClip.frequency,
+            false
+        );
+        stereoClip.SetData(stereoData, 0);
+
+        // 播放音频
+        AudioSource audioSource = GetComponent<AudioSource>();
+        audioSource.clip = stereoClip;
+        audioSource.Play();
+    }
+}
