@@ -30,6 +30,10 @@ GLFWwindow* window;
 float lastX = 400, lastY = 300;
 float yaw = 0, pitch = 0; //偏航角, 俯仰角
 bool firstMouse = true;
+float cameraSpeed = 0.05f; // adjust accordingly
+glm::vec3 cameraFront;
+glm::vec3 cameraPos;
+glm::vec3 cameraUp;
 //窗口尺寸改变回调
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
@@ -42,7 +46,55 @@ void processInput(GLFWwindow* window) {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 	{
 		glfwSetWindowShouldClose(window, true);
+		float cameraSpeed = 0.05f; // adjust accordingly
+		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+			cameraPos += cameraSpeed * cameraFront;
+		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+			cameraPos -= cameraSpeed * cameraFront;
+		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+			cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+			cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
 	}
+}
+
+
+void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+
+	if (firstMouse) // 这个bool变量初始时是设定为true的
+	{
+		lastX = xpos;
+		lastY = ypos;
+		firstMouse = false;
+	}
+
+	float xoffset = xpos - lastX;
+	float yoffset = lastY - ypos; // 注意这里是相反的，因为y坐标是从底部往顶部依次增大的
+	lastX = xpos;
+	lastY = ypos;
+
+	float sensitivity = 0.05f;
+	xoffset *= sensitivity;
+	yoffset *= sensitivity;
+
+	yaw += xoffset;
+	pitch += yoffset;
+
+	if (pitch > 89.0f)
+		pitch = 89.0f;
+	if (pitch < -89.0f)
+		pitch = -89.0f;
+
+	glm::vec3 front;
+	front.x = cos(glm::radians(pitch)) * cos(glm::radians(yaw));
+	front.y = sin(glm::radians(pitch));
+	front.z = cos(glm::radians(pitch)) * sin(glm::radians(yaw));
+	cameraFront = glm::normalize(front);
+}
+
+void MouseInput() {
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetCursorPosCallback(window, mouse_callback);
 }
 #pragma endregion
 
@@ -209,6 +261,10 @@ int main()
 
 #pragma endregion
 
+#pragma region input init
+	MouseInput();
+#pragma endregion
+
 
 	//glfwWindowShouldClose函数在我们每次循环的开始前检查一次GLFW是否被要求退出，
 	//如果是的话，该函数返回true，渲染循环将停止运行，之后我们就可以关闭应用程序。
@@ -282,7 +338,6 @@ void BuildCamera() {
 	//基于右手坐标系
 
 	//1相机位置
-	//
 	//正z轴是从屏幕指向你的，如果我们希望摄像机向后移动，我们就沿着z轴的正方向移动。
 	glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
 
@@ -297,48 +352,11 @@ void BuildCamera() {
 	//（如果我们交换两个向量叉乘的顺序就会得到相反的指向x轴负方向的向量）
 	glm::vec3 cameraRight = glm::normalize(glm::cross(up, cameraDirection));
 	//4上轴 正y轴向量
-	glm::vec3 cameraUp = glm::cross(cameraDirection, cameraRight);
+	cameraUp = glm::cross(cameraDirection, cameraRight);
 
 	//注:格拉姆—施密特正交化(Gram-Schmidt Process)。使用这些摄像机向量我们就可以创建一个LookAt矩阵了，它在创建摄像机的时候非常有用。
 	//在三维空间中，叉乘是施密特正交化的几何实现，两者在数学上等价
 
 	glm::mat4 view = glm::lookAt(cameraPos, cameraTarget, up);
 
-}
-void mouse_callback(GLFWwindow* window,double xpos,double ypos ) {
-
-	if (firstMouse) // 这个bool变量初始时是设定为true的
-	{
-		lastX = xpos;
-		lastY = ypos;
-		firstMouse = false;
-	}
-
-	float xoffset = xpos - lastX;
-	float yoffset = lastY - ypos; // 注意这里是相反的，因为y坐标是从底部往顶部依次增大的
-	lastX = xpos;
-	lastY = ypos;
-
-	float sensitivity = 0.05f;
-	xoffset *= sensitivity;
-	yoffset *= sensitivity;
-
-	yaw += xoffset;
-	pitch += yoffset;
-
-	if (pitch > 89.0f)
-		pitch = 89.0f;
-	if (pitch < -89.0f)
-		pitch = -89.0f;
-
-	glm::vec3 front;
-	front.x = cos(glm::radians(pitch)) * cos(glm::radians(yaw));
-	front.y = sin(glm::radians(pitch));
-	front.z = cos(glm::radians(pitch)) * sin(glm::radians(yaw));
-	glm::vec3 cameraFront = glm::normalize(front);
-}
-
-void MouseInput() {
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	glfwSetCursorPosCallback(window, mouse_callback);
 }
